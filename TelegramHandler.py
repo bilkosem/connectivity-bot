@@ -12,6 +12,7 @@ class TelegramBot():
     updater = None
     chatId = None
     help_message = None
+    command_desc = {}
 
     @staticmethod
     def setToken(token):
@@ -26,30 +27,18 @@ class TelegramBot():
         TelegramBot.updater.bot.send_message(TelegramBot.chatId, text=message)
 
     @staticmethod
-    def add_handler(handler):
-        #TelegramBot.updater.dispatcher.add_handler(handler)
+    def add_handler(handler, description = ""):
         TelegramBot.updater.dispatcher.add_handler(handler)
-
-    #@staticmethod
-    def configure_help_message():
-        commands = [cmd_handler.command[0] for cmd_handler in TelegramBot.updater.dispatcher.handlers[0] if type(cmd_handler) == CommandHandler]
-        #help_message
-        TelegramBot.add_handler(CommandHandler('help', TelegramBot.help))
-        TelegramBot.add_handler(CommandHandler('method', TelegramBot.method))
-
+        if type(handler) == CommandHandler:
+            TelegramBot.command_desc[handler.command[0]] = description
 
     @staticmethod
     def help(update: Update, context: CallbackContext):
-        update.message.reply_text("""Available Commands :-
-        /youtube - To get the youtube URL
-        /linkedin - To get the LinkedIn profile URL
-        /gmail - To get gmail URL
-        /geeks - To get the GeeksforGeeks URL""")
+        message = 'Available Commands:\n'
+        for command, desc in TelegramBot.command_desc.items():
+            message += f'        /{command}: {TelegramBot.command_desc.get(command, "")}\n'
+        update.message.reply_text(message)
 
-    @staticmethod
-    def method(update: Update, context: CallbackContext):
-        update.message.reply_text(
-            "methoddddddd")
 
 def start(update: Update, context: CallbackContext):
     update.message.reply_text(
@@ -72,7 +61,8 @@ if __name__ == "__main__":
 
     TelegramBot.setToken(config['Telegram']['Token'])
     TelegramBot.setChatId(config['Telegram']['ChatId'])
-    TelegramBot.add_handler(CommandHandler('start', start))
+    TelegramBot.add_handler(CommandHandler('start', start), description="start desc")
+    TelegramBot.add_handler(CommandHandler('help', TelegramBot.help), description="")
 
     TelegramBot.add_handler(MessageHandler(Filters.text, unknown))
     TelegramBot.add_handler(MessageHandler(
@@ -83,7 +73,9 @@ if __name__ == "__main__":
 
     # How to get chatId: https://api.telegram.org/bot<YourBOTToken>/getUpdates
     TelegramBot.send_message("my dummy message")
-    TelegramBot.configure_help_message() # TODO: help message
     commandss = [cmd_handler.command[0] for cmd_handler in TelegramBot.updater.dispatcher.handlers[0] if type(cmd_handler) == CommandHandler]
     print(commandss)
     TelegramBot.updater.start_polling()
+    print("after start polling")
+    TelegramBot.updater.idle()
+    print("after idle")

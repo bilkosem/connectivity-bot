@@ -1,3 +1,7 @@
+from dataclasses import dataclass
+from textwrap import indent
+from matplotlib.pyplot import title
+from sqlalchemy import false, true
 from telegram.ext.updater import Updater
 from telegram.update import Update
 from telegram.ext.callbackcontext import CallbackContext
@@ -8,11 +12,49 @@ from telegram.ext.filters import Filters
 import sys
 import json
 
+@dataclass
+class TelegramMessageFormat():
+    header: str = 'header'
+    tailer: str = ''
+    line_indent: str = '\n        '
+    line_format: str = ''
+    constant_message: None = None
+
+    def build_from_dict(self, data) -> str:
+        body = ''
+        for key, pair in data.items():
+            line = self.line_indent + self.line_format.format(key, pair)
+            body += line
+        return body 
+
+    def build_from_list(self, data) -> str:
+        body = ''
+        for datum in data:
+            line = self.line_indent + self.line_format.format(datum)
+            body += line
+        return body
+
+    def build(self, data, is_constant=false) -> str:
+        message = self.header
+        if type(data) == dict:
+            message += self.build_from_dict(data)
+        elif type(data) == list:
+            message += self.build_from_list(data)
+        message += self.tailer
+
+        # If message is constant, store it to be used
+        if is_constant:
+            self.constant_message = message
+
+        return message
+
+
 class TelegramBot():
     updater = None
     chatId = None
     help_message = None
     command_desc = {}
+    telegram_formats = {}
 
     @staticmethod
     def setToken(token):
@@ -23,8 +65,26 @@ class TelegramBot():
         TelegramBot.chatId = chatId
 
     @staticmethod
-    def send_message(message):
-        TelegramBot.updater.bot.send_message(TelegramBot.chatId, text=message)
+    def send_raw_message(message):
+        # Send the message if updater and chatId exist
+        if TelegramBot.updater != None and TelegramBot.chatId != None:
+            TelegramBot.updater.bot.send_message(TelegramBot.chatId, text=message)
+        return message
+
+    @staticmethod
+    def send_formatted_message(format, data=[]):
+        message = ''
+        if message := TelegramBot.telegram_formats[format].constant_message:
+            pass
+        else:
+            message = TelegramBot.telegram_formats[format].build(data)
+        return TelegramBot.send_raw_message(message)
+
+    @staticmethod
+    def add_format(format_name, telegram_format, constant_data=None):
+        if constant_data != None:
+            telegram_format.build(constant_data, true)
+        TelegramBot.telegram_formats[format_name] = telegram_format
 
     @staticmethod
     def add_handler(handler, description = ""):
@@ -72,10 +132,15 @@ if __name__ == "__main__":
     TelegramBot.add_handler(MessageHandler(Filters.text, unknown_text))
 
     # How to get chatId: https://api.telegram.org/bot<YourBOTToken>/getUpdates
-    TelegramBot.send_message("my dummy message")
+    TelegramBot.send_raw_message("dummy message")
+
+    format = TelegramMessageFormat('Header','\ntailer','\n        ','/{}: {}')
+    TelegramBot.add_format('help', format, constant_data=TelegramBot.command_desc)
+    TelegramBot.send_formatted_message('help')
+
     commandss = [cmd_handler.command[0] for cmd_handler in TelegramBot.updater.dispatcher.handlers[0] if type(cmd_handler) == CommandHandler]
-    print(commandss)
     TelegramBot.updater.start_polling()
     print("after start polling")
     TelegramBot.updater.idle()
     print("after idle")
+    # TODO: PoC of error logging to Telegram

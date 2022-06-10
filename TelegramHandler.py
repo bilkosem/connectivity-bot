@@ -1,7 +1,4 @@
 from dataclasses import dataclass
-from textwrap import indent
-from matplotlib.pyplot import title
-from sqlalchemy import false, true
 from telegram.ext.updater import Updater
 from telegram.update import Update
 from telegram.ext.callbackcontext import CallbackContext
@@ -34,7 +31,7 @@ class TelegramMessageFormat():
             body += line
         return body
 
-    def build(self, data, is_constant=false) -> str:
+    def build(self, data, is_constant=False) -> str:
         message = self.header
         if type(data) == dict:
             message += self.build_from_dict(data)
@@ -83,7 +80,7 @@ class TelegramBot():
     @staticmethod
     def add_format(format_name, telegram_format, constant_data=None):
         if constant_data != None:
-            telegram_format.build(constant_data, true)
+            telegram_format.build(constant_data, True)
         TelegramBot.telegram_formats[format_name] = telegram_format
 
     @staticmethod

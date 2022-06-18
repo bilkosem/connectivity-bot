@@ -8,6 +8,7 @@ from telegram.ext.filters import Filters
   
 import sys
 import json
+import time
 
 @dataclass
 class TelegramMessageFormat():
@@ -112,6 +113,7 @@ def unknown_text(update: Update, context: CallbackContext):
     update.message.reply_text(
         "Sorry I can't recognize you , you said '%s'" % update.message.text)
 
+
 if __name__ == "__main__":
     f = open(str(sys.argv[1]),'r')
     config = json.load(f)
@@ -122,10 +124,7 @@ if __name__ == "__main__":
     TelegramBot.add_handler(CommandHandler('help', TelegramBot.help), description="")
 
     TelegramBot.add_handler(MessageHandler(Filters.text, unknown))
-    TelegramBot.add_handler(MessageHandler(
-        Filters.command, unknown))  # Filters out unknown commands
-    
-    # Filters out unknown messages.
+    TelegramBot.add_handler(MessageHandler(Filters.command, unknown))
     TelegramBot.add_handler(MessageHandler(Filters.text, unknown_text))
 
     # How to get chatId: https://api.telegram.org/bot<YourBOTToken>/getUpdates
@@ -137,7 +136,10 @@ if __name__ == "__main__":
 
     commandss = [cmd_handler.command[0] for cmd_handler in TelegramBot.updater.dispatcher.handlers[0] if type(cmd_handler) == CommandHandler]
     TelegramBot.updater.start_polling()
-    print("after start polling")
-    TelegramBot.updater.idle()
-    print("after idle")
     # TODO: PoC of error logging to Telegram
+    #TelegramBot.updater.idle()
+
+    counter = 0
+    while(True):
+        print("in loop", str(counter))
+        time.sleep(1)

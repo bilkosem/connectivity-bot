@@ -9,6 +9,8 @@ from telegram.ext.filters import Filters
 import sys
 import json
 import time
+import os
+import signal
 
 @dataclass
 class TelegramMessageFormat():
@@ -97,11 +99,10 @@ class TelegramBot():
             message += f'        /{command}: {TelegramBot.command_desc.get(command, "")}\n'
         update.message.reply_text(message)
 
-
-def start(update: Update, context: CallbackContext):
-    update.message.reply_text(
-        "Hello sir, Welcome to the Bot.Please write\
-        /help to see the commands available.")
+    @staticmethod
+    def kill(update: Update, context: CallbackContext):
+        update.message.reply_text("Killing the bot!")
+        os.kill(os.getpid(), signal.SIGINT)
 
 
 def unknown(update: Update, context: CallbackContext):
@@ -120,7 +121,7 @@ if __name__ == "__main__":
 
     TelegramBot.setToken(config['Telegram']['Token'])
     TelegramBot.setChatId(config['Telegram']['ChatId'])
-    TelegramBot.add_handler(CommandHandler('start', start), description="start desc")
+    TelegramBot.add_handler(CommandHandler('kill', TelegramBot.kill), description="Killing the bot...")
     TelegramBot.add_handler(CommandHandler('help', TelegramBot.help), description="")
 
     TelegramBot.add_handler(MessageHandler(Filters.text, unknown))

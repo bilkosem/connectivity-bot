@@ -1,5 +1,5 @@
 import unittest
-from TelegramHandler import *
+from connectivity_bot.telegram_wrapper import *
 
 class test_TelegramMessageFormat(unittest.TestCase):
     

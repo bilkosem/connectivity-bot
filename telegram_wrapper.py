@@ -104,8 +104,12 @@ class TelegramBot():
         update.message.reply_text("Killing the bot!")
         os.kill(os.getpid(), signal.SIGINT)
 
+    @staticmethod
+    def pong(update: Update, context: CallbackContext):
+        update.message.reply_text("pong")
 
-def unknown(update: Update, context: CallbackContext):
+
+def unknown_command(update: Update, context: CallbackContext):
     update.message.reply_text(
         "Sorry '%s' is not a valid command" % update.message.text)
 
@@ -119,13 +123,14 @@ if __name__ == "__main__":
     f = open(str(sys.argv[1]),'r')
     config = json.load(f)
 
-    TelegramBot.setToken(config['Telegram']['Token'])
-    TelegramBot.setChatId(config['Telegram']['ChatId'])
+    TelegramBot.setToken(config['Telegram']['token'])
+    TelegramBot.setChatId(config['Telegram']['chat_id'])
     TelegramBot.add_handler(CommandHandler('kill', TelegramBot.kill), description="Killing the bot...")
-    TelegramBot.add_handler(CommandHandler('help', TelegramBot.help), description="")
+    TelegramBot.add_handler(CommandHandler('help', TelegramBot.help), description="Print help message")
+    TelegramBot.add_handler(CommandHandler('ping', TelegramBot.pong), description="Ping the bot")
 
-    TelegramBot.add_handler(MessageHandler(Filters.text, unknown))
-    TelegramBot.add_handler(MessageHandler(Filters.command, unknown))
+    TelegramBot.add_handler(MessageHandler(Filters.text, unknown_command))
+    #TelegramBot.add_handler(MessageHandler(Filters.command, unknown_command))
     TelegramBot.add_handler(MessageHandler(Filters.text, unknown_text))
 
     # How to get chatId: https://api.telegram.org/bot<YourBOTToken>/getUpdates

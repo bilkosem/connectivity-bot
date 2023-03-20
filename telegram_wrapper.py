@@ -14,8 +14,8 @@ import signal
 
 @dataclass
 class TelegramMessageFormat():
-    header_format: str = 'header'
-    tailer: str = ''
+    header_format: str = ''
+    tailer_format: str = ''
     line_indent: str = '\n        '
     line_format: str = ''
     constant_message: None = None
@@ -34,7 +34,7 @@ class TelegramMessageFormat():
             body += line
         return body
 
-    def build(self, body_data, header_data, is_constant=False) -> str:
+    def build(self, body_data, header_data, tailer_data, is_constant=False) -> str:
 
         if header_data:
             message = self.header_format.format(*header_data)
@@ -45,7 +45,13 @@ class TelegramMessageFormat():
             message += self.build_from_dict(body_data)
         elif type(body_data) == list:
             message += self.build_from_list(body_data)
-        message += self.tailer
+
+        if tailer_data:
+            message += self.tailer_format.format(*tailer_data)
+        else:
+            message += self.tailer_format
+
+        #message += self.tailer
 
         # If message is constant, store it to be used
         if is_constant:
@@ -77,18 +83,18 @@ class TelegramBot():
         return message
 
     @staticmethod
-    def send_formatted_message(format, body_data=[], header_data=[]):
+    def send_formatted_message(format, body_data=[], header_data=[], tailer_data=[]):
         message = ''
         if message := TelegramBot.telegram_formats[format].constant_message:
             pass
         else:
-            message = TelegramBot.telegram_formats[format].build(body_data, header_data)
+            message = TelegramBot.telegram_formats[format].build(body_data, header_data, tailer_data)
         return TelegramBot.send_raw_message(message)
 
     @staticmethod
     def add_format(format_name, telegram_format: TelegramMessageFormat, constant_data=None):
         if constant_data != None:
-            telegram_format.build(body_data=constant_data, header_data=[], is_constant=True)
+            telegram_format.build(body_data=constant_data, header_data=[], tailer_data=[], is_constant=True)
         TelegramBot.telegram_formats[format_name] = telegram_format
 
     @staticmethod
@@ -145,12 +151,17 @@ if __name__ == "__main__":
     TelegramBot.add_format('help', format, constant_data=TelegramBot.command_desc)
     TelegramBot.send_formatted_message('help')
 
-    complex_format = TelegramMessageFormat('Strategy: {}, side: {}','\ntailer','\n        ','/{}: {}')
+    complex_format = TelegramMessageFormat(
+        header_format='Strategy: {}, side: {}',
+        tailer_format='\nTrade ID: {}',
+        line_indent='\n        ',
+        line_format='/{}: {}')
     TelegramBot.add_format('complex_message', complex_format)
     
     body_data = {'key1':'value1', 'key2':'value2'}
     header_data = ['text1', 'text2']
-    TelegramBot.send_formatted_message('complex_message',body_data=body_data, header_data=header_data)
+    tailer_data = ['1234567']
+    TelegramBot.send_formatted_message('complex_message',body_data=body_data, header_data=header_data, tailer_data=tailer_data)
 
     commandss = [cmd_handler.command[0] for cmd_handler in TelegramBot.updater.dispatcher.handlers[0] if type(cmd_handler) == CommandHandler]
     TelegramBot.updater.start_polling()

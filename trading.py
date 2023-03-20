@@ -27,16 +27,19 @@ def init_telegram_bot(token, chat_id):
     format = TelegramMessageFormat('Balance:','\n','\n        ','{}')
     TelegramBot.add_format('balance', format)
 
-    format = TelegramMessageFormat('Order executed:','\n','\n        ','{}: {}')
+    # Enter order executed: StrategyName
+    format = TelegramMessageFormat('{} order executed: {}','\nTrade ID: {}','\n        ','{}: {}')
     TelegramBot.add_format('order_executed', format)
 
-    format = TelegramMessageFormat('Order filled:','\n','\n        ','{}: {}')
+    # Enter order filled: StrategyName
+    format = TelegramMessageFormat('{} order filled: {}','\nTrade ID: {}','\n        ','{}: {}')
     TelegramBot.add_format('order_filled', format)
 
-    format = TelegramMessageFormat('Trade result:','\n','\n        ','{}: {}')
+    # Trade closed: StrategyName
+    format = TelegramMessageFormat('Trade closed: {}','\nTrade ID: {}','\n        ','{}: {}')
     TelegramBot.add_format('trade_closed', format)
 
-    format = TelegramMessageFormat('Help:','\ntailer','\n        ','/{}: {}')
+    format = TelegramMessageFormat('Help:','\n','\n        ','/{}: {}')
     TelegramBot.add_format('help', format, constant_data=TelegramBot.command_desc)
 
     format = TelegramMessageFormat('Error occured:','\n','\n        ','{}')

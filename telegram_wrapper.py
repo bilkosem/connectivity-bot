@@ -11,6 +11,7 @@ import json
 import time
 import os
 import signal
+import asyncio
 
 @dataclass
 class TelegramMessageFormat():
@@ -64,7 +65,8 @@ class TelegramBot():
     updater = None
     chatId = None
     help_message = None
-    client_config = None
+    database_config = None
+    binance_credentials = None
     command_desc = {}
     telegram_formats = {}
 
@@ -75,10 +77,6 @@ class TelegramBot():
     @staticmethod
     def setChatId(chatId):
         TelegramBot.chatId = chatId
-
-    @staticmethod
-    def set_client_config(config):
-        TelegramBot.client_config = config
 
     @staticmethod
     def send_raw_message(message):
@@ -133,6 +131,13 @@ def unknown_command(update: Update, context: CallbackContext):
 def unknown_text(update: Update, context: CallbackContext):
     update.message.reply_text(
         "Sorry I can't recognize you , you said '%s'" % update.message.text)
+
+
+def asynchandler(func):
+    #global loop
+    def wrapper(update: Update, context: CallbackContext):
+        asyncio.run(func(update, context))
+    return wrapper
 
 
 if __name__ == "__main__":

@@ -93,6 +93,13 @@ class TelegramBot():
         else:
             message = TelegramBot.telegram_formats[format].build(body_data, header_data, tailer_data)
         return TelegramBot.send_raw_message(message)
+    
+    @staticmethod
+    def send_table(message):
+        # Send the message if updater and chatId exist
+        if TelegramBot.updater != None and TelegramBot.chatId != None:
+            TelegramBot.updater.bot.send_message(TelegramBot.chatId, text=f'<pre>{message}</pre>', parse_mode='html')
+        return message
 
     @staticmethod
     def add_format(format_name, telegram_format: TelegramMessageFormat, constant_data=None):

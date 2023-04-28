@@ -12,6 +12,9 @@ import time
 import os
 import signal
 import asyncio
+import logging
+
+logger = logging.getLogger('app')
 
 @dataclass
 class TelegramMessageFormat():
@@ -80,9 +83,13 @@ class TelegramBot():
 
     @staticmethod
     def send_raw_message(message):
-        # Send the message if updater and chatId exist
-        if TelegramBot.updater != None and TelegramBot.chatId != None:
-            TelegramBot.updater.bot.send_message(TelegramBot.chatId, text=message)
+        try:
+            # Send the message if updater and chatId exist
+            if TelegramBot.updater != None and TelegramBot.chatId != None:
+                TelegramBot.updater.bot.send_message(TelegramBot.chatId, text=message)
+        except Exception as e:
+            logger.error('Telegram message could not be sent {}'.format(message))
+            logger.error(e, exc_info=True)
         return message
 
     @staticmethod
@@ -93,12 +100,16 @@ class TelegramBot():
         else:
             message = TelegramBot.telegram_formats[format].build(body_data, header_data, tailer_data)
         return TelegramBot.send_raw_message(message)
-    
+
     @staticmethod
     def send_table(message):
-        # Send the message if updater and chatId exist
-        if TelegramBot.updater != None and TelegramBot.chatId != None:
-            TelegramBot.updater.bot.send_message(TelegramBot.chatId, text=f'<pre>{message}</pre>', parse_mode='html')
+        try:
+            # Send the message if updater and chatId exist
+            if TelegramBot.updater != None and TelegramBot.chatId != None:
+                TelegramBot.updater.bot.send_message(TelegramBot.chatId, text=f'<pre>{message}</pre>', parse_mode='html')
+        except Exception as e:
+            logger.error('Telegram message could not be sent {}'.format(message))
+            logger.error(e, exc_info=True)
         return message
 
     @staticmethod

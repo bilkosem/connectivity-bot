@@ -94,6 +94,9 @@ class TelegramBot():
 
     @staticmethod
     def send_formatted_message(format, body_data=[], header_data=[], tailer_data=[]):
+        if format not in TelegramBot.telegram_formats:
+            return
+
         message = ''
         if message := TelegramBot.telegram_formats[format].constant_message:
             pass

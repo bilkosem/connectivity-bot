@@ -11,11 +11,15 @@ import json
 import time
 import os
 import signal
+import asyncio
+import logging
+
+logger = logging.getLogger('app')
 
 @dataclass
 class TelegramMessageFormat():
-    header: str = 'header'
-    tailer: str = ''
+    header_format: str = ''
+    tailer_format: str = ''
     line_indent: str = '\n        '
     line_format: str = ''
     constant_message: None = None
@@ -34,13 +38,24 @@ class TelegramMessageFormat():
             body += line
         return body
 
-    def build(self, data, is_constant=False) -> str:
-        message = self.header
-        if type(data) == dict:
-            message += self.build_from_dict(data)
-        elif type(data) == list:
-            message += self.build_from_list(data)
-        message += self.tailer
+    def build(self, body_data, header_data, tailer_data, is_constant=False) -> str:
+
+        if header_data:
+            message = self.header_format.format(*header_data)
+        else:
+            message = self.header_format
+
+        if type(body_data) == dict:
+            message += self.build_from_dict(body_data)
+        elif type(body_data) == list:
+            message += self.build_from_list(body_data)
+
+        if tailer_data:
+            message += self.tailer_format.format(*tailer_data)
+        else:
+            message += self.tailer_format
+
+        #message += self.tailer
 
         # If message is constant, store it to be used
         if is_constant:
@@ -53,6 +68,8 @@ class TelegramBot():
     updater = None
     chatId = None
     help_message = None
+    database_config = None
+    binance_credentials = None
     command_desc = {}
     telegram_formats = {}
 
@@ -66,24 +83,42 @@ class TelegramBot():
 
     @staticmethod
     def send_raw_message(message):
-        # Send the message if updater and chatId exist
-        if TelegramBot.updater != None and TelegramBot.chatId != None:
-            TelegramBot.updater.bot.send_message(TelegramBot.chatId, text=message)
+        try:
+            # Send the message if updater and chatId exist
+            if TelegramBot.updater != None and TelegramBot.chatId != None:
+                TelegramBot.updater.bot.send_message(TelegramBot.chatId, text=message)
+        except Exception as e:
+            logger.error('Telegram message could not be sent {}'.format(message))
+            logger.error(e, exc_info=True)
         return message
 
     @staticmethod
-    def send_formatted_message(format, data=[]):
+    def send_formatted_message(format, body_data=[], header_data=[], tailer_data=[]):
+        if format not in TelegramBot.telegram_formats:
+            return
+
         message = ''
         if message := TelegramBot.telegram_formats[format].constant_message:
             pass
         else:
-            message = TelegramBot.telegram_formats[format].build(data)
+            message = TelegramBot.telegram_formats[format].build(body_data, header_data, tailer_data)
         return TelegramBot.send_raw_message(message)
 
     @staticmethod
-    def add_format(format_name, telegram_format, constant_data=None):
+    def send_table(message):
+        try:
+            # Send the message if updater and chatId exist
+            if TelegramBot.updater != None and TelegramBot.chatId != None:
+                TelegramBot.updater.bot.send_message(TelegramBot.chatId, text=f'<pre>{message}</pre>', parse_mode='html')
+        except Exception as e:
+            logger.error('Telegram message could not be sent {}'.format(message))
+            logger.error(e, exc_info=True)
+        return message
+
+    @staticmethod
+    def add_format(format_name, telegram_format: TelegramMessageFormat, constant_data=None):
         if constant_data != None:
-            telegram_format.build(constant_data, True)
+            telegram_format.build(body_data=constant_data, header_data=[], tailer_data=[], is_constant=True)
         TelegramBot.telegram_formats[format_name] = telegram_format
 
     @staticmethod
@@ -119,6 +154,13 @@ def unknown_text(update: Update, context: CallbackContext):
         "Sorry I can't recognize you , you said '%s'" % update.message.text)
 
 
+def asynchandler(func):
+    #global loop
+    def wrapper(update: Update, context: CallbackContext):
+        asyncio.run(func(update, context))
+    return wrapper
+
+
 if __name__ == "__main__":
     f = open(str(sys.argv[1]),'r')
     config = json.load(f)
@@ -139,6 +181,18 @@ if __name__ == "__main__":
     format = TelegramMessageFormat('Header','\ntailer','\n        ','/{}: {}')
     TelegramBot.add_format('help', format, constant_data=TelegramBot.command_desc)
     TelegramBot.send_formatted_message('help')
+
+    complex_format = TelegramMessageFormat(
+        header_format='Strategy: {}, side: {}',
+        tailer_format='\nTrade ID: {}',
+        line_indent='\n        ',
+        line_format='/{}: {}')
+    TelegramBot.add_format('complex_message', complex_format)
+    
+    body_data = {'key1':'value1', 'key2':'value2'}
+    header_data = ['text1', 'text2']
+    tailer_data = ['1234567']
+    TelegramBot.send_formatted_message('complex_message',body_data=body_data, header_data=header_data, tailer_data=tailer_data)
 
     commandss = [cmd_handler.command[0] for cmd_handler in TelegramBot.updater.dispatcher.handlers[0] if type(cmd_handler) == CommandHandler]
     TelegramBot.updater.start_polling()
